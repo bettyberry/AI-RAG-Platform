@@ -1,14 +1,13 @@
 'use client';
 
 import { Sidebar } from '@/components/sidebar';
-import { DocumentsPage } from '@/components/documents';
+import { SettingsPage } from '@/components/settings';
 
-export default function Home() {
-  console.log('[v0] Home page rendered');
+export default function Settings() {
   return (
     <div className="flex h-screen bg-background">
       <Sidebar />
-      <DocumentsPage />
+      <SettingsPage />
     </div>
   );
 }
