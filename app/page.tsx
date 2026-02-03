@@ -4,7 +4,6 @@ import { Sidebar } from '@/components/sidebar';
 import { DocumentsPage } from '@/components/documents';
 
 export default function Home() {
-  console.log('[v0] Home page rendered');
   return (
     <div className="flex h-screen bg-background">
       <Sidebar />
