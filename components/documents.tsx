@@ -85,13 +85,7 @@ export function DocumentsPage() {
           );
         }, 1500);
 
-        setTimeout(() => {
-          setDocuments((prev) =>
-            prev.map((doc) =>
-              doc.id === newDoc.id ? { ...doc, status: 'ready' } : doc
-            )
-          );
-        }, 3500);
+        
       }
     });
   };
