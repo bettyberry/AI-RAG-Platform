@@ -1,54 +1,115 @@
 import { NextResponse } from "next/server";
-import { getDocument, GlobalWorkerOptions, version } from "pdfjs-dist";
 
 export async function POST(req: Request) {
+  console.log("=== /api/upload START ===");
+  
   try {
-    const formData = await req.formData();
-    const file = formData.get("file") as File | null;
-
-    if (!file) {
-      return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
-    }
-
-    // Check file type
-    if (file.type !== "application/pdf") {
-      return NextResponse.json({ error: "Only PDF files are allowed" }, { status: 400 });
-    }
-
-    const arrayBuffer = await file.arrayBuffer();
-    const uint8Array = new Uint8Array(arrayBuffer);
-
-    // For Node.js environment, we need to set up the worker differently
-    // You can disable worker or use a different approach
-    GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${version}/pdf.worker.min.js`;
-
-    // Load PDF document
-    const loadingTask = getDocument({ 
-      data: uint8Array,
-      useWorkerFetch: false, // Disable worker in Node.js
-      isEvalSupported: false,
-      useSystemFonts: true
-    });
+    // Log request headers for debugging
+    const headers = Object.fromEntries(req.headers.entries());
+    console.log("Request headers:", headers);
     
-    const pdfDoc = await loadingTask.promise;
-
-    let text = "";
-    for (let i = 1; i <= pdfDoc.numPages; i++) {
-      const page = await pdfDoc.getPage(i);
-      const content = await page.getTextContent();
-      const strings = content.items.map((item: any) => item.str);
-      text += strings.join(" ") + "\n";
+    // Get form data
+    const formData = await req.formData();
+    console.log("Form data received");
+    
+    const file = formData.get("file") as File | null;
+    
+    if (!file) {
+      console.error("No file in form data");
+      const formDataKeys = Array.from(formData.keys());
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: "No file uploaded",
+          debug: { formDataKeys }
+        }, 
+        { status: 400 }
+      );
     }
 
-    return NextResponse.json({
-      id: Date.now().toString(),
+    console.log("File received:", {
       name: file.name,
-      pages: pdfDoc.numPages,
-      status: "ready",
-      text,
+      type: file.type,
+      size: file.size,
     });
-  } catch (err) {
-    console.error("PDF parse failed", err);
-    return NextResponse.json({ error: "Failed to parse PDF" }, { status: 500 });
+
+    // Validate file type
+    const isPDF = file.type === "application/pdf" || 
+                  file.name.toLowerCase().endsWith('.pdf');
+    
+    if (!isPDF) {
+      console.error("Invalid file type:", file.type);
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: "Only PDF files are allowed",
+          receivedType: file.type,
+          fileName: file.name
+        }, 
+        { status: 400 }
+      );
+    }
+
+    // Check file size (optional)
+    const maxSize = 50 * 1024 * 1024; // 50MB
+    if (file.size > maxSize) {
+      console.error("File too large:", file.size);
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: "File size exceeds 50MB limit",
+          fileSize: file.size,
+          maxSize
+        }, 
+        { status: 400 }
+      );
+    }
+
+    // For now, return a mock response to test the flow
+    // We'll add PDF parsing later
+    console.log("Returning mock response (PDF parsing disabled for testing)");
+    
+    return NextResponse.json({
+      success: true,
+      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+      name: file.name,
+      pages: Math.max(1, Math.floor(file.size / 50000)), // Estimate pages
+      status: "ready",
+      text: `Mock text extracted from ${file.name}. This is a placeholder until PDF parsing is enabled. File size: ${file.size} bytes.`,
+      debug: {
+        fileSize: file.size,
+        fileName: file.name,
+        fileType: file.type,
+        note: "PDF parsing is currently disabled for testing"
+      }
+    });
+
+  } catch (error: any) {
+    console.error("=== /api/upload ERROR ===");
+    console.error("Error:", error);
+    console.error("Error stack:", error.stack);
+    
+    return NextResponse.json(
+      { 
+        success: false, 
+        error: "Internal server error",
+        message: error.message || "Unknown error",
+        timestamp: new Date().toISOString()
+      }, 
+      { status: 500 }
+    );
   }
+}
+
+// Handle OPTIONS for CORS (important for file uploads)
+export async function OPTIONS() {
+  console.log("CORS OPTIONS request received");
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Accept',
+    },
+  });
 }
