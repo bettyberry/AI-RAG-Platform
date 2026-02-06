@@ -135,9 +135,6 @@ export function DocumentsPage() {
       try {
         console.log("Sending fetch request to /api/upload");
         
-        // TEST: First try a simple test endpoint
-        // const testRes = await fetch("/api/test", { method: "POST" });
-        // console.log("Test endpoint response:", await testRes.json());
         
         const res = await fetch("/api/upload", {
           method: "POST",
