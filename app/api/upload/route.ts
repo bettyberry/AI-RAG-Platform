@@ -4,7 +4,6 @@ export async function POST(req: Request) {
   console.log("=== /api/upload START ===");
   
   try {
-    // Log request headers for debugging
     const headers = Object.fromEntries(req.headers.entries());
     console.log("Request headers:", headers);
     
@@ -65,8 +64,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // For now, return a mock response to test the flow
-    // We'll add PDF parsing later
+    
     console.log("Returning mock response (PDF parsing disabled for testing)");
     
     return NextResponse.json({

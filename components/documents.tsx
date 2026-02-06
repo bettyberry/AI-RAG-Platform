@@ -57,7 +57,6 @@ export function DocumentsPage() {
     }
   };
 
-  // ----- Drag & Drop Handlers -----
   const handleDragEnter = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -86,7 +85,6 @@ export function DocumentsPage() {
     }
   };
 
-  // ----- Upload Handler -----
   const handleFilesUpload = async (files: FileList) => {
     console.log("=== FRONTEND UPLOAD START ===");
     console.log("Number of files:", files.length);

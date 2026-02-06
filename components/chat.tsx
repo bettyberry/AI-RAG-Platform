@@ -36,37 +36,64 @@ export function ChatPage() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+const handleSendMessage = async () => {
+  if (!input.trim() || isLoading) return;
 
-  const handleSendMessage = () => {
-    if (!input.trim() || isLoading) return;
-
-    // Add user message
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      role: 'user',
-      content: input,
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
-    setInput('');
-    setIsLoading(true);
-
-    // Simulate AI response with streaming effect
-    setTimeout(() => {
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content:
-          'Based on the documents you\'ve shared, this is a comprehensive response that directly addresses your question. The information comes from multiple sections of your uploaded PDFs and has been synthesized to provide you with the most relevant answer.',
-        citations: [
-          { document: 'Product Roadmap 2026.pdf', page: 5 },
-          { document: 'Q1 Financial Report.pdf', page: 3 },
-        ],
-      };
-      setMessages((prev) => [...prev, assistantMessage]);
-      setIsLoading(false);
-    }, 2000);
+  const userMessage: Message = {
+    id: Date.now().toString(),
+    role: 'user',
+    content: input,
   };
+
+  const assistantMessageId = (Date.now() + 1).toString();
+
+  setMessages((prev) => [
+    ...prev,
+    userMessage,
+    {
+      id: assistantMessageId,
+      role: 'assistant',
+      content: '',
+    },
+  ]);
+
+  setInput('');
+  setIsLoading(true);
+
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: userMessage.content }),
+    });
+
+    if (!res.body) throw new Error('No response body');
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+
+    let done = false;
+
+    while (!done) {
+      const { value, done: doneReading } = await reader.read();
+      done = doneReading;
+
+      const chunkValue = decoder.decode(value || new Uint8Array());
+
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === assistantMessageId
+            ? { ...msg, content: msg.content + chunkValue }
+            : msg
+        )
+      );
+    }
+  } catch (err) {
+    console.error(err);
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   return (
     <div className="flex-1 overflow-hidden flex flex-col">
