@@ -242,7 +242,6 @@ export function DocumentsPage() {
     }
   };
 
-  // ----- Delete Handler -----
   const handleDelete = (id: string) => {
     const document = documents.find(doc => doc.id === id);
     
@@ -262,7 +261,6 @@ export function DocumentsPage() {
     }
   };
 
-  // ----- Format file size -----
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
