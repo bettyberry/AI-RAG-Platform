@@ -182,7 +182,6 @@ export function DocumentsPage() {
         // Chunk the text for RAG
         const chunks = data.text ? chunkText(data.text, 1000, 200) : [];
 
-        // Update document with backend data
         setDocuments(prev =>
           prev.map(doc =>
             doc.id === tempId
