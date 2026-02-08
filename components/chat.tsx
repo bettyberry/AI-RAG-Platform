@@ -97,7 +97,6 @@ const handleSendMessage = async () => {
 
   return (
     <div className="flex-1 overflow-hidden flex flex-col">
-      {/* Messages Area */}
       <div className="flex-1 overflow-auto p-8 space-y-6">
         <div className="max-w-3xl">
           {messages.length === 0 && !hasDocuments ? (
