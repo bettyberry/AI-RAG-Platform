@@ -47,9 +47,14 @@ const handleSendMessage = async () => {
 
   const assistantMessageId = (Date.now() + 1).toString();
 
-  setMessages((prev) => [
-    ...prev,
+  // 1. Create the updated messages array locally to send to the API
+  const newMessages: Message[] = [
+    ...messages,
     userMessage,
+  ];
+
+  setMessages([
+    ...newMessages,
     {
       id: assistantMessageId,
       role: 'assistant',
@@ -64,8 +69,14 @@ const handleSendMessage = async () => {
     const res = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: userMessage.content }),
+      // FIX: Send the array of messages wrapped in an object
+      body: JSON.stringify({ messages: newMessages }),
     });
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.error || 'Failed to get response');
+    }
 
     if (!res.body) throw new Error('No response body');
 
@@ -73,11 +84,9 @@ const handleSendMessage = async () => {
     const decoder = new TextDecoder();
 
     let done = false;
-
     while (!done) {
       const { value, done: doneReading } = await reader.read();
       done = doneReading;
-
       const chunkValue = decoder.decode(value || new Uint8Array());
 
       setMessages((prev) =>
@@ -88,13 +97,19 @@ const handleSendMessage = async () => {
         )
       );
     }
-  } catch (err) {
-    console.error(err);
+  } catch (err: any) {
+    console.error('Chat Error:', err);
+    setMessages((prev) =>
+      prev.map((msg) =>
+        msg.id === assistantMessageId
+          ? { ...msg, content: `Error: ${err.message}. Please try again.` }
+          : msg
+      )
+    );
   } finally {
     setIsLoading(false);
   }
 };
-
   return (
     <div className="flex-1 overflow-hidden flex flex-col">
       <div className="flex-1 overflow-auto p-8 space-y-6">

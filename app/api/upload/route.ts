@@ -1,54 +1,32 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from "next/server";
+// Use the modern fork that fixes the DOMMatrix error
+import pdf from "pdf-parse-fork";
 
-export async function POST(request: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
-    const formData = await request.formData();
-    const file = formData.get('file') as File;
-    
+    const formData = await req.formData();
+    const file = formData.get("file") as File;
+
     if (!file) {
-      return NextResponse.json(
-        { error: 'No file provided' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
     }
 
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-    
-    // Use pdf2json which is more reliable
-    const PDFParser = (await import('pdf2json')).default;
-    const pdfParser = new PDFParser();
-    
-    const text = await new Promise<string>((resolve, reject) => {
-      let extractedText = '';
-      
-      pdfParser.on('pdfParser_dataError', reject);
-      pdfParser.on('pdfParser_dataReady', (pdfData: any) => {
-        extractedText = pdfData.Pages.map((page: any) => 
-          page.Texts.map((text: any) => 
-            decodeURIComponent(text.R[0].T)
-          ).join(' ')
-        ).join('\n');
-        resolve(extractedText);
-      });
-      
-      pdfParser.parseBuffer(buffer);
+    const buffer = Buffer.from(await file.arrayBuffer());
+
+    // pdf-parse-fork handles the server environment correctly
+    const data = await pdf(buffer);
+
+    return NextResponse.json({
+      id: Math.random().toString(36).substring(7),
+      text: data.text,
+      pages: data.numpages,
+      status: "ready"
     });
-    
-    return NextResponse.json({ 
-      success: true, 
-      text,
-      pages: text.split('\n').length 
-    });
-    
   } catch (error: any) {
-    console.error('Upload error:', error);
-    return NextResponse.json(
-      { 
-        error: 'PDF processing failed',
-        message: error.message
-      },
-      { status: 500 }
-    );
+    console.error("PDF Parsing Error:", error);
+    return NextResponse.json({ 
+      error: "Failed to parse PDF", 
+      details: error.message 
+    }, { status: 500 });
   }
 }

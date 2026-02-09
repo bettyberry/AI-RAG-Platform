@@ -21,7 +21,7 @@ export function DocumentsPage() {
   const [isDragActive, setIsDragActive] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState<Set<string>>(new Set());
 
-  // ----- Status Badge Component -----
+  // ----- Status Badge Component (Original UI) -----
   const StatusBadge = ({ status, error }: { status: Document["status"]; error?: string }) => {
     switch (status) {
       case "uploading":
@@ -86,18 +86,9 @@ export function DocumentsPage() {
   };
 
   const handleFilesUpload = async (files: FileList) => {
-    console.log("=== FRONTEND UPLOAD START ===");
-    console.log("Number of files:", files.length);
-    
-    const fileArray = Array.from(files).filter(file => {
-      const isPDF = file.type === "application/pdf" || file.name.toLowerCase().endsWith('.pdf');
-      if (!isPDF) {
-        console.warn(`Skipping non-PDF file: ${file.name} (type: ${file.type})`);
-      }
-      return isPDF;
-    });
-    
-    console.log("PDF files after filtering:", fileArray.length);
+    const fileArray = Array.from(files).filter(file => 
+      file.type === "application/pdf" || file.name.toLowerCase().endsWith('.pdf')
+    );
     
     if (fileArray.length === 0) {
       alert("Please select PDF files only.");
@@ -105,17 +96,8 @@ export function DocumentsPage() {
     }
     
     for (const file of fileArray) {
-      const tempId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+      const tempId = Date.now().toString() + Math.random().toString(36).substring(2, 9);
       
-      console.log(`Processing file: ${file.name} (ID: ${tempId})`);
-      console.log("File details:", {
-        name: file.name,
-        type: file.type,
-        size: file.size,
-        lastModified: file.lastModified
-      });
-      
-      // Optimistic UI
       const newDoc: Document = {
         id: tempId,
         name: file.name,
@@ -131,55 +113,26 @@ export function DocumentsPage() {
       formData.append("file", file);
 
       try {
-        console.log("Sending fetch request to /api/upload");
-        
-        
         const res = await fetch("/api/upload", {
           method: "POST",
           body: formData,
-          // Add timeout
-          signal: AbortSignal.timeout(30000), // 30 second timeout
+          // FIX: Increased timeout to 90 seconds to prevent TimeoutError during PDF parsing
+          signal: AbortSignal.timeout(90000), 
         });
 
-        console.log("Response status:", res.status);
-        console.log("Response ok:", res.ok);
-        console.log("Response headers:", Object.fromEntries(res.headers.entries()));
-        
-        const responseText = await res.text();
-        console.log("Raw response text (first 500 chars):", responseText.substring(0, 500));
-        
-        let data;
-        try {
-          data = JSON.parse(responseText);
-          console.log("Parsed response data:", {
-            ...data,
-            text: data.text ? `[Text length: ${data.text.length} chars]` : 'No text',
-          });
-        } catch (parseError) {
-          console.error("Failed to parse JSON:", parseError);
-          console.error("Response was:", responseText.substring(0, 200));
-          throw new Error(`Server returned invalid JSON: ${responseText.substring(0, 100)}...`);
-        }
-
         if (!res.ok) {
-          console.error("API error response:", data);
-          const errorMessage = data.error || data.message || `Upload failed: ${res.status} ${res.statusText}`;
-          throw new Error(errorMessage);
+          const errorData = await res.json();
+          throw new Error(errorData.error || `Upload failed: ${res.status}`);
         }
 
-        // Update status to processing while chunking
+        const data = await res.json();
+
+        // Update status to processing while chunking locally
         setDocuments(prev =>
-          prev.map(doc =>
-            doc.id === tempId
-              ? {
-                  ...doc,
-                  status: "processing",
-                }
-              : doc
-          )
+          prev.map(doc => doc.id === tempId ? { ...doc, status: "processing" } : doc)
         );
 
-        // Chunk the text for RAG
+        // Chunk the text for RAG (1000 chars per chunk, 200 char overlap)
         const chunks = data.text ? chunkText(data.text, 1000, 200) : [];
 
         setDocuments(prev =>
@@ -189,46 +142,26 @@ export function DocumentsPage() {
                   ...doc,
                   id: data.id || tempId,
                   pages: data.pages || 0,
-                  status: data.status || "ready",
+                  status: "ready",
                   chunks,
                 }
               : doc
           )
         );
 
-        console.log(`Uploaded "${file.name}" → ${data.pages} pages, ${chunks.length} chunks`);
-
       } catch (err: any) {
-        console.error("Catch block error:", err);
-        console.error("Error name:", err.name);
-        console.error("Error message:", err.message);
-        console.error("Error stack:", err.stack);
-        
-        // Check for specific error types
         let errorMessage = err.message || "Unknown error occurred";
         if (err.name === 'AbortError' || err.name === 'TimeoutError') {
-          errorMessage = "Upload timed out. Please try again with a smaller file.";
-        } else if (err.name === 'TypeError' && err.message.includes('Failed to fetch')) {
-          errorMessage = "Network error. Please check your connection.";
+          errorMessage = "Upload timed out. The PDF is taking too long to process.";
         }
         
-        // Update to show error state
         setDocuments(prev =>
           prev.map(doc =>
             doc.id === tempId 
-              ? { 
-                  ...doc, 
-                  status: "error", 
-                  pages: 0,
-                  name: `${doc.name}`,
-                  error: errorMessage
-                } 
+              ? { ...doc, status: "error", error: errorMessage } 
               : doc
           )
         );
-        
-        // Show alert for user
-        alert(`Failed to upload "${file.name}": ${errorMessage}`);
       } finally {
         setUploadingFiles(prev => {
           const newSet = new Set(prev);
@@ -241,20 +174,8 @@ export function DocumentsPage() {
 
   const handleDelete = (id: string) => {
     const document = documents.find(doc => doc.id === id);
-    
-    if (uploadingFiles.has(id)) {
-      if (confirm("This file is still uploading. Are you sure you want to cancel?")) {
-        setDocuments(prev => prev.filter(doc => doc.id !== id));
-        setUploadingFiles(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(id);
-          return newSet;
-        });
-      }
-    } else {
-      if (confirm(`Are you sure you want to delete "${document?.name}"?`)) {
-        setDocuments(prev => prev.filter(doc => doc.id !== id));
-      }
+    if (confirm(`Are you sure you want to delete "${document?.name}"?`)) {
+      setDocuments(prev => prev.filter(doc => doc.id !== id));
     }
   };
 
@@ -269,11 +190,9 @@ export function DocumentsPage() {
   return (
     <div className="flex-1 overflow-auto">
       <div className="p-8 max-w-4xl">
-        {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2">Documents</h1>
           <p className="text-muted-foreground">Upload and manage your knowledge base documents</p>
-         
         </div>
 
         {/* Upload Area */}
@@ -285,6 +204,7 @@ export function DocumentsPage() {
           className={`rounded-lg border-2 border-dashed p-12 text-center transition-colors mb-8 cursor-pointer ${
             isDragActive ? "border-accent bg-accent/5" : "border-border bg-secondary hover:border-accent/50"
           }`}
+          onClick={() => document.getElementById('file-upload')?.click()}
         >
           <div className="flex flex-col items-center gap-3">
             <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center">
@@ -293,7 +213,6 @@ export function DocumentsPage() {
             <div>
               <p className="font-semibold text-foreground">Drag and drop your PDFs here</p>
               <p className="text-sm text-muted-foreground mt-1">or click to browse</p>
-              <p className="text-xs text-muted-foreground mt-2">Only PDF files are supported</p>
             </div>
             <input
               type="file"
@@ -308,102 +227,54 @@ export function DocumentsPage() {
                 }
               }}
             />
-            <label htmlFor="file-upload">
-              <Button variant="outline" size="sm" asChild>
-                <span>Select PDF Files</span>
-              </Button>
-            </label>
           </div>
         </div>
 
         {/* Documents List */}
         {documents.length === 0 ? (
           <div className="rounded-lg border border-border bg-card p-12 text-center">
-            <div className="flex flex-col items-center gap-3">
-              <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center">
-                <FileText className="w-6 h-6 text-muted-foreground" />
-              </div>
-              <div>
-                <p className="font-semibold text-foreground">No documents yet</p>
-                <p className="text-sm text-muted-foreground mt-1">Upload a PDF to get started</p>
-              </div>
-            </div>
+             <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+             <p className="font-semibold text-foreground">No documents yet</p>
+             <p className="text-sm text-muted-foreground mt-1">Upload a PDF to get started</p>
           </div>
         ) : (
           <div className="space-y-3">
             {documents.map((doc) => (
-              <div
-                key={doc.id}
-                className={`p-4 rounded-lg border ${
-                  doc.status === 'error' 
-                    ? 'border-red-200 bg-red-50 hover:bg-red-50/80' 
-                    : 'border-border bg-card hover:bg-card/80'
-                } transition-colors`}
-              >
+              <div key={doc.id} className={`p-4 rounded-lg border transition-colors ${
+                doc.status === 'error' ? 'border-red-200 bg-red-50' : 'border-border bg-card'
+              }`}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4 flex-1 min-w-0">
-                    <div className="w-10 h-10 bg-muted rounded flex items-center justify-center flex-shrink-0">
-                      <FileText className={`w-5 h-5 ${
-                        doc.status === 'error' ? 'text-red-500' : 'text-muted-foreground'
-                      }`} />
-                    </div>
+                    <FileText className={`w-10 h-10 flex-shrink-0 ${doc.status === 'error' ? 'text-red-500' : 'text-muted-foreground'}`} />
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium text-foreground truncate">{doc.name}</p>
-                        {doc.status === 'error' && (
-                          <span className="text-xs px-2 py-1 bg-red-100 text-red-700 rounded">
-                            Failed
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-sm text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 mt-1">
+                      <p className="font-medium text-foreground truncate">{doc.name}</p>
+                      <div className="text-sm text-muted-foreground flex gap-4 mt-1">
                         <span>{doc.pages > 0 ? `${doc.pages} pages` : "Processing..."}</span>
-                        <span>{formatFileSize(0)}</span>
-                        <span>{doc.uploadedAt.toLocaleDateString()}</span>
-                        {doc.chunks && doc.chunks.length > 0 && (
-                          <span>{doc.chunks.length} chunks</span>
-                        )}
+                        {doc.chunks && <span>{doc.chunks.length} chunks</span>}
                       </div>
-                      {doc.error && (
-                        <p className="text-sm text-red-600 mt-2">{doc.error}</p>
-                      )}
+                      {doc.error && <p className="text-sm text-red-600 mt-2">{doc.error}</p>}
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 flex-shrink-0">
+                  <div className="flex items-center gap-3">
                     <StatusBadge status={doc.status} error={doc.error} />
-                    <button
-                      onClick={() => handleDelete(doc.id)}
-                      className={`p-2 rounded-lg transition-colors ${
-                        doc.status === 'error' 
-                          ? 'hover:bg-red-100' 
-                          : 'hover:bg-destructive/10'
-                      }`}
-                      aria-label="Delete document"
+                    <button 
+                      onClick={() => handleDelete(doc.id)} 
+                      className="p-2 hover:bg-destructive/10 rounded-lg transition-colors"
                       disabled={uploadingFiles.has(doc.id)}
                     >
-                      <Trash2 className={`w-4 h-4 ${
-                        doc.status === 'error' 
-                          ? 'text-red-500 hover:text-red-700' 
-                          : 'text-muted-foreground hover:text-destructive'
-                      }`} />
+                      <Trash2 className="w-4 h-4 text-muted-foreground hover:text-destructive" />
                     </button>
                   </div>
                 </div>
                 {doc.status === 'uploading' && (
-                  <div className="mt-3">
-                    <div className="h-1 w-full bg-muted rounded-full overflow-hidden">
-                      <div className="h-full bg-blue-500 animate-pulse w-1/2"></div>
-                    </div>
+                  <div className="mt-3 h-1 w-full bg-muted rounded-full overflow-hidden">
+                    <div className="h-full bg-blue-500 animate-pulse w-1/2" />
                   </div>
                 )}
               </div>
             ))}
           </div>
         )}
-
-       
-
-       
       </div>
     </div>
   );

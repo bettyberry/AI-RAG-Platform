@@ -1,25 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  
-  webpack: (config, { isServer }) => {
-    if (!isServer) {
-      config.resolve.fallback = {
-        ...config.resolve.fallback,
-        canvas: false,
-        fs: false,
-        path: false,
-      };
-    }
-    return config;
-  },
-  
-  turbopack: {
-  },
-  
-  experimental: {
-  
-  }
+  serverExternalPackages: ["pdf-parse", "pdf-parse-fork"],
 };
 
 export default nextConfig;

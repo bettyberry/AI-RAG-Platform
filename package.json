@@ -20,7 +20,7 @@
     "multer": "^2.0.2",
     "next": "16.1.6",
     "openai": "^6.18.0",
-    "pdf-parse": "^2.4.5",
+    "pdf-parse-fork": "^1.2.0",
     "pdf2json": "^4.0.2",
     "pdfjs-dist": "^3.11.174",
     "radix-ui": "^1.4.3",
