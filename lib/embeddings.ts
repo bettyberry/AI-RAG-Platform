@@ -1,12 +1,25 @@
 import OpenAI from "openai"
+import { splitText } from "./textSplitter"
+import { vectorDB } from "./vectorDB"
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! })
+const openai = new OpenAI()
 
-export async function createEmbedding(text: string) {
-  const res = await openai.embeddings.create({
-    model: "text-embedding-3-small",
-    input: text,
-  })
+export async function embedAndStore(
+  text: string,
+  meta: { source: string; name: string }
+) {
+  const chunks = await splitText(text)
 
-  return res.data[0].embedding
+  for (const chunk of chunks) {
+    const embedding = await openai.embeddings.create({
+      model: "text-embedding-3-large",
+      input: chunk,
+    })
+
+    await vectorDB.upsert({
+      content: chunk,
+      embedding: embedding.data[0].embedding,
+      metadata: meta,
+    })
+  }
 }

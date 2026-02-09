@@ -1,15 +1,9 @@
-import { similaritySearch } from "./vectorStore"
-
-export async function buildPrompt(question: string) {
-  const contextChunks = await similaritySearch(question)
-
+export function buildPrompt(context: string, question: string) {
   return `
-You are a helpful assistant.
-Answer ONLY using the context below.
-If the answer is not in the context, say "I don’t know."
+You are an expert AI. Answer ONLY using the context below.
 
 Context:
-${contextChunks.join("\n\n")}
+${context}
 
 Question:
 ${question}
