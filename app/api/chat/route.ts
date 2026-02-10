@@ -20,7 +20,6 @@ export async function POST(req: Request) {
     const context = await getContext(lastMessage);
     const fullPrompt = buildPrompt(context, lastMessage);
 
-    // FIX: Access .chat on the 'openai' instance, not the 'OpenAI' class
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
       stream: true,
