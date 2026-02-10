@@ -2,7 +2,6 @@ import OpenAI from "openai";
 import { getContext } from "../../../lib/context";
 import { buildPrompt } from "../../../lib/rag";
 
-// Ensure you instantiate the class with 'new'
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
