@@ -47,7 +47,6 @@ const handleSendMessage = async () => {
 
   const assistantMessageId = (Date.now() + 1).toString();
 
-  // 1. Create the updated messages array locally to send to the API
   const newMessages: Message[] = [
     ...messages,
     userMessage,
