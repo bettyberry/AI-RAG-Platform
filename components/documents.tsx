@@ -230,7 +230,6 @@ export function DocumentsPage() {
           </div>
         </div>
 
-        {/* Documents List */}
         {documents.length === 0 ? (
           <div className="rounded-lg border border-border bg-card p-12 text-center">
              <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
