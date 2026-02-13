@@ -11,7 +11,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { messages } = body;
 
-    // Check if messages exists to prevent the 'length' of undefined error
+
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return new Response(JSON.stringify({ error: "No messages provided" }), { status: 400 });
     }
