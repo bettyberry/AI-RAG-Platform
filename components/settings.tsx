@@ -28,7 +28,6 @@ export function SettingsPage() {
         </div>
 
         <div className="space-y-6">
-          {/* AI Behavior */}
           <Card className="p-6">
             <h2 className="text-lg font-semibold text-foreground mb-4">AI Behavior</h2>
             <div className="space-y-4">
