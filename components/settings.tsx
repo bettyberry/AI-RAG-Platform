@@ -27,7 +27,6 @@ export function SettingsPage() {
           <p className="text-muted-foreground">Manage your KnowledgeStream preferences</p>
         </div>
 
-        {/* General Settings */}
         <div className="space-y-6">
           {/* AI Behavior */}
           <Card className="p-6">
