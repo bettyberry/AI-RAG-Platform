@@ -21,7 +21,6 @@ export function SettingsPage() {
   return (
     <div className="flex-1 overflow-auto">
       <div className="p-8 max-w-2xl">
-        {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2">Settings</h1>
           <p className="text-muted-foreground">Manage your KnowledgeStream preferences</p>
