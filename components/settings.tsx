@@ -60,7 +60,6 @@ export function SettingsPage() {
             </div>
           </Card>
 
-          {/* Document Management */}
           <Card className="p-6">
             <h2 className="text-lg font-semibold text-foreground mb-4">Document Management</h2>
             <div className="space-y-4">
