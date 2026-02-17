@@ -78,7 +78,6 @@ export function SettingsPage() {
             </div>
           </Card>
 
-          {/* Notifications */}
           <Card className="p-6">
             <h2 className="text-lg font-semibold text-foreground mb-4">Notifications</h2>
             <div className="space-y-4">
