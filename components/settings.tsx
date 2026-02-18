@@ -96,7 +96,6 @@ export function SettingsPage() {
             </div>
           </Card>
 
-          {/* Account Section */}
           <Card className="p-6">
             <h2 className="text-lg font-semibold text-foreground mb-4">Account</h2>
             <div className="space-y-4">
