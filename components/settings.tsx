@@ -111,7 +111,7 @@ export function SettingsPage() {
             </div>
           </Card>
 
-          {/* Danger Zone */}
+          
           <Card className="p-6 border-destructive/20 bg-destructive/5">
             <h2 className="text-lg font-semibold text-foreground mb-4">Danger Zone</h2>
             <div className="space-y-3">
