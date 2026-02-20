@@ -32,7 +32,7 @@ export async function POST(req: Request) {
       ],
     });
 
-    // Extract only the text tokens to send to the frontend
+   
     const stream = new ReadableStream({
       async start(controller) {
         const encoder = new TextEncoder();
