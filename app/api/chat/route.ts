@@ -2,8 +2,9 @@ import OpenAI from "openai";
 import { getContext } from "../../../lib/context";
 import { buildPrompt } from "../../../lib/rag";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+const groq = new OpenAI({
+  apiKey: process.env.GROQ_API_KEY!,
+  baseURL: "https://api.groq.com/openai/v1",
 });
 
 export async function POST(req: Request) {
@@ -11,17 +12,20 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { messages } = body;
 
-
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
-      return new Response(JSON.stringify({ error: "No messages provided" }), { status: 400 });
+      return new Response(
+        JSON.stringify({ error: "No messages provided" }),
+        { status: 400 }
+      );
     }
 
     const lastMessage = messages[messages.length - 1].content;
+
     const context = await getContext(lastMessage);
     const fullPrompt = buildPrompt(context, lastMessage);
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+    const response = await groq.chat.completions.create({
+model: "llama-3.1-70b-versatile",
       stream: true,
       messages: [
         { role: "system", content: "You are a helpful assistant." },
@@ -31,8 +35,12 @@ export async function POST(req: Request) {
 
     const stream = response.toReadableStream();
     return new Response(stream);
+
   } catch (error: any) {
     console.error("Chat Error:", error);
-    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { status: 500 }
+    );
   }
 }
