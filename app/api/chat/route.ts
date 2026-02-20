@@ -24,14 +24,14 @@ export async function POST(req: Request) {
     const context = await getContext(lastMessage);
     const fullPrompt = buildPrompt(context, lastMessage);
 
-    const response = await groq.chat.completions.create({
-model: "llama-3.1-70b-versatile",
-      stream: true,
-      messages: [
-        { role: "system", content: "You are a helpful assistant." },
-        { role: "user", content: fullPrompt }
-      ],
-    });
+const response = await groq.chat.completions.create({
+  model: "llama-3.3-70b-versatile", 
+  stream: true,
+  messages: [
+    { role: "system", content: "You are a helpful assistant." },
+    { role: "user", content: fullPrompt }
+  ],
+});
 
     const stream = response.toReadableStream();
     return new Response(stream);
