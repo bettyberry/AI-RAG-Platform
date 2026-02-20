@@ -20,20 +20,37 @@ export async function POST(req: Request) {
     }
 
     const lastMessage = messages[messages.length - 1].content;
-
     const context = await getContext(lastMessage);
     const fullPrompt = buildPrompt(context, lastMessage);
 
-const response = await groq.chat.completions.create({
-  model: "llama-3.3-70b-versatile", 
-  stream: true,
-  messages: [
-    { role: "system", content: "You are a helpful assistant." },
-    { role: "user", content: fullPrompt }
-  ],
-});
+    const response = await groq.chat.completions.create({
+      model: "llama-3.3-70b-versatile", // Use the updated model
+      stream: true,
+      messages: [
+        { role: "system", content: "You are a helpful assistant." },
+        { role: "user", content: fullPrompt }
+      ],
+    });
 
-    const stream = response.toReadableStream();
+    // Extract only the text tokens to send to the frontend
+    const stream = new ReadableStream({
+      async start(controller) {
+        const encoder = new TextEncoder();
+        try {
+          for await (const chunk of response) {
+            const content = chunk.choices[0]?.delta?.content || "";
+            if (content) {
+              controller.enqueue(encoder.encode(content));
+            }
+          }
+        } catch (err) {
+          controller.error(err);
+        } finally {
+          controller.close();
+        }
+      },
+    });
+
     return new Response(stream);
 
   } catch (error: any) {
