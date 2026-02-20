@@ -24,7 +24,7 @@ export async function POST(req: Request) {
     const fullPrompt = buildPrompt(context, lastMessage);
 
     const response = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile", // Use the updated model
+      model: "llama-3.3-70b-versatile",  
       stream: true,
       messages: [
         { role: "system", content: "You are a helpful assistant." },
