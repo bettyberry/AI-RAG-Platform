@@ -68,7 +68,6 @@ const handleSendMessage = async () => {
     const res = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      // FIX: Send the array of messages wrapped in an object
       body: JSON.stringify({ messages: newMessages }),
     });
 
