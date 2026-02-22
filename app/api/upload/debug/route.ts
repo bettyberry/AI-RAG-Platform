@@ -22,7 +22,6 @@ export async function POST(req: Request) {
       }, { status: 400 });
     }
 
-    // Check file type
     if (file.type !== "application/pdf") {
       console.log("Invalid file type:", file.type);
       return NextResponse.json({ 
@@ -34,7 +33,6 @@ export async function POST(req: Request) {
 
     console.log("File validation passed");
     
-    // Return a simple success response without PDF parsing
     return NextResponse.json({
       success: true,
       id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
