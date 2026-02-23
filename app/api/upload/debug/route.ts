@@ -37,7 +37,7 @@ export async function POST(req: Request) {
       success: true,
       id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
       name: file.name,
-      pages: 5, // Mock value
+      pages: 5, 
       status: "ready",
       text: "This is mock text from the debug endpoint.",
       debug: {
